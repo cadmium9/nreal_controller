@@ -37,6 +37,22 @@ def main(argv=None):
     for monitor in monitors:
         print(monitor)
     
+
+
+    # print(str(SlamCamera.image_grabbed.shape))
+    
+    # plt.axis("off")
+    # plt.imshow(SlamCamera.image_grabbed)
+    # plt.show()
+    
+    #cv2.imshow('grayscale image', SlamCamera.image_grabbed)    
+    #image = Image.frombytes('L', (SlamCamera.height, SlamCamera.width), frame)
+    #image.show()
+    # while True:
+        # time.sleep(0.1)
+    
+    # return 1
+    
     
     if argv is None:
         argv = sys.argv
@@ -70,6 +86,7 @@ def main(argv=None):
     sdkStarted = 0
     frameCount = 0
     
+   # Shake
    
     nreal.Active()
     while nreal.Sending != 0:
@@ -151,23 +168,28 @@ def main(argv=None):
         time.sleep(0.1)        
 
 
+    # Set Super active
+
+    
+
+
     #Odometry = Imu()
     
-    SlamCamera = Camera()
+    #SlamCamera = Camera()
     
-    print(SlamCamera.get_devices())    
+    # print(SlamCamera.get_devices())    
 
-    SlamCamera.set_device(1)
-    SlamCamera.start()
-    SlamCamera.grab_frame()
-    SlamCamera.wait_image()
+    # SlamCamera.set_device(1)
+    # SlamCamera.start()
+    # SlamCamera.grab_frame()
+    # SlamCamera.wait_image()
 
     
     
-    ax1 = plt.subplot(1,1,1)    
-    plt.axis("off")
-    img = ax1.imshow(SlamCamera.image_grabbed)    
-    plt.ion()
+    # ax1 = plt.subplot(1,1,1)    
+    # plt.axis("off")
+    # img = ax1.imshow(SlamCamera.image_grabbed)    
+    # plt.ion()
     
     
     frameid = 0
@@ -186,17 +208,16 @@ def main(argv=None):
         if time.perf_counter() - renderTick > 0.05:
             renderTick = time.perf_counter()
             frameid = frameid + 1
-            SlamCamera.grab_frame()
-            SlamCamera.wait_image()
+            # SlamCamera.grab_frame()
+            # SlamCamera.wait_image()
             
             #for a in range(0,128,1):
             #    print(hex(SlamCamera.image_grabbed[480,a,0]) + hex(SlamCamera.image_grabbed[480,a,1]) + hex(SlamCamera.image_grabbed[480,a,2]), end='')
             #print()
 
-            #save('raw'+str(frameid) +'.bin', SlamCamera.image_grabbed);
-            img.set_data(SlamCamera.image_grabbed)
-            plt.draw()
-            plt.pause(0.0000001)
+            # img.set_data(SlamCamera.image_grabbed)
+            # plt.draw()
+            # plt.pause(0.0000001)
 
         if (frameCount % 10000) == 0:
             time.sleep(0.000000000001)

@@ -6,7 +6,8 @@ import ctypes
 import operator
 import time
 import sys
-
+import usb.core
+import usb.util
 
 
 '''
@@ -34,6 +35,19 @@ class Glasses():
         self.PacketCount = 0
         self.Sending = 0
                 
+        self.dev = usb.core.find(idVendor=self.Vendor, idProduct=self.Product)        
+        if self.dev is None:
+            print('Could not find Glasses usb device')
+            return
+        
+        self.dev.set_configuration()
+        self.cfg = self.dev.get_active_configuration()
+        self.intf = self.cfg[(0,0)]
+
+        print("Glasses cfg " + str(self.cfg))
+        self.inited = True        
+        return
+                
         self.device = hid.HidDeviceFilter(vendor_id = self.Vendor, product_id = self.Product).get_devices()[0]        
         self.device.open()
         
@@ -48,6 +62,32 @@ class Glasses():
     def Close(self):
         pass
        
+
+    def hid_set_report(self, report):
+        self.dev.write(1, report, timeout = 100)
+        return
+    
+        """ Implements HID SetReport via USB control transfer """
+        self.dev.ctrl_transfer(
+          0x21,  # REQUEST_TYPE_CLASS | RECIPIENT_INTERFACE | ENDPOINT_OUT
+          9,     # SET_REPORT
+          0x200, # "Vendor" Descriptor Type + 0 Descriptor Index
+          0,     # USB interface number  0
+          report # the HID payload as a byte array -- e.g. from struct.pack()
+        )
+
+    def hid_get_report(self, timeout=100):
+    
+        return self.dev.read(129, 64, timeout = timeout)
+        
+        """ Implements HID GetReport via USB control transfer """
+        return self.dev.ctrl_transfer(
+          0xA1,  # REQUEST_TYPE_CLASS | RECIPIENT_INTERFACE | ENDPOINT_IN
+          1,     # GET_REPORT
+          0x200, # "Vendor" Descriptor Type + 0 Descriptor Index
+          0,     # USB interface number  0
+          64     # max reply size
+        )       
 
     def swap32(self,i):
         return struct.unpack("<I", struct.pack(">I", i))[0]
@@ -88,7 +128,7 @@ class Glasses():
 
     def OnHidRead(self, data):
         szData = bytes(data).decode("utf-8")
-        #print("Rx Len " + str(len(szData)) + ": " + szData)
+        print("Rx Len " + str(len(szData)) + ": " + szData)
         self.Sending = 0
         return None
         
@@ -111,8 +151,13 @@ class Glasses():
         
         szData = bytes(packet).decode("utf-8")
         #print("Tx Len " + str(len(packet)) + ": " + str(szData))
-        self.report.set_raw_data(packet)
-        self.report.send()
+        
+        self.hid_set_report(packet)
+        data = self.hid_get_report()
+        self.OnHidRead(data)
+        #print("Rx " + str(szData))
+        #self.report.set_raw_data(packet)
+        #self.report.send()
         
         self.PacketCount = self.PacketCount + 1
         
@@ -133,6 +178,8 @@ class Glasses():
         packet = self.CreatePacket(payload)
         
         self.SendPacket(packet)
+        data = self.hid_get_report()
+        self.OnHidRead(data)
         
     def StartSDK(self):
         #@:3:1:61282fcf:c0f55a9d:
@@ -295,6 +342,13 @@ class Glasses():
             #print("Delta KA " + str(self.Tick - self.TickKeepAlive))
             self.TickKeepAlive = self.Tick            
             self.KeepAlive()
+        else:
+            try:
+                data = self.hid_get_report(1)
+                self.OnHidRead(data)
+            except:
+                pass
+            
 
 
 def fmthex(stri):
